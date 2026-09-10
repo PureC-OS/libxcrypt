@@ -39,21 +39,22 @@ static void check_streaming(void) {
 
 int main(void) {
     static const char m112[] =
-        "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+        "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
+        "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
     static uint8_t m1000[1000];
     uint8_t big[1000000 / 1000 * 1000];
     (void)big;
     memset(m1000, 'a', sizeof(m1000));
 
     check("empty", (const uint8_t *)"", 0,
-          "cf83e1357eefb8bdf1542850dd721d64c437d2743fef"
-          "dd3792e9327f2341c2fc19d8aa3ed5c9d5c0551e5cc7c9a3d84b9bb5c521b9b5ff6938cc9d865a");
+          "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715"
+          "dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e");
     check("abc", (const uint8_t *)"abc", 3,
           "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"
-          "2192992a274fc1a836ba3c23a3fbac4198ae6534ca456c00c9249dd47e8f27b8f6fb0527");
+          "2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
     check("112-char", (const uint8_t *)m112, 112,
-          "204a8fc6dda82f0a0ced784f9d79330e7d92d6576231d"
-          "f0d191323c796b7e5b4c7243e8ef8d377ded0f33b63f9a875a4b9f10f2264d1a3cd9c647");
+          "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299ae"
+          "adb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
     /* 1M x 'a' in chunks (multi-block + padding edge). */
     {
         pure_sha512_ctx ctx;
@@ -65,8 +66,8 @@ int main(void) {
         pure_sha512_final(&ctx, d);
         pure_sha512_hex(d, hex);
         const char *want =
-            "e718483d0ce769644e2e42c7fe15b4ac9f006b85412204daa279fb1c508d5e"
-            "adb8e739e9f2d5e1479f941b6e2f1f73d1f7fb05b8eb48b442a6da8a112b7f1f55";
+            "e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973eb"
+            "de0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b";
         if (strcmp(hex, want) != 0) {
             printf("FAIL 1M-a\n  got  %s\n  want %s\n", hex, want);
             fails++;

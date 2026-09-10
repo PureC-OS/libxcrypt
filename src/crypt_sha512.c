@@ -96,9 +96,10 @@ static int crypt_body(const char *pw, size_t pw_len,
     for (i = 0; i < pw_len; i++)
         p_bytes[i] = tmp[i % 64];
 
-    /* 4. Byte sequence S: SHA512(salt repeated salt_len times), cycled. */
+    /* 4. Byte sequence S: SHA512(salt repeated (16 + dp[0]) times),
+     * cycled. dp still holds the intermediate digest here. */
     pure_sha512_init(&ctx);
-    for (cnt = salt_len; cnt > 0; cnt--)
+    for (cnt = 0; cnt < 16u + (unsigned)dp[0]; cnt++)
         pure_sha512_update(&ctx, (const uint8_t *)salt, salt_len);
     pure_sha512_final(&ctx, tmp);
     for (i = 0; i < salt_len; i++)
@@ -238,8 +239,11 @@ static int parse_setting(const char *s, const char **salt, size_t *salt_len,
     while (*p && *p != '$')
         p++;
     *salt_len = (size_t)(p - *salt);
-    if (*salt_len == 0 || *salt_len > PURECRYPT_SALT_MAX || *p != '$')
+    if (*salt_len == 0 || *p != '$')
         return -1;
+    /* glibc truncates overlong salts instead of failing. */
+    if (*salt_len > PURECRYPT_SALT_MAX)
+        *salt_len = PURECRYPT_SALT_MAX;
     /* validate salt charset (bounded, no strlen needed) */
     {
         size_t dummy = *salt_len;

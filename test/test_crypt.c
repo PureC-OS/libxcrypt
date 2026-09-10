@@ -1,6 +1,5 @@
 /* Host-only test: our $6$ output must be byte-identical to glibc crypt().
  * Compile with -lcrypt. Rounds kept small so the suite runs fast. */
-#define _GNU_SOURCE
 #include <crypt.h>
 #include <stdio.h>
 #include <string.h>
@@ -92,7 +91,7 @@ static void check_rejects(void) {
         uint8_t raw[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         char s[17];
         purecrypt_gensalt(raw, s);
-        if (strcmp(s, "./0123456789ABCDE") != 0) {
+        if (memcmp(s, "./0123456789ABCD", 17) != 0) {
             printf("FAIL gensalt got %s\n", s);
             fails++;
         } else {
@@ -105,7 +104,7 @@ int main(void) {
     check_vec("", "abcd", 1000);
     check_vec("a", "x", 1000);
     check_vec("password", "saltsalt", 1000);
-    check_vec("hello world", "./0123456789ABCDE", 1000);
+    check_vec("hello world", "./0123456789ABCD", 1000);
     check_vec("longer password with spaces 123!", "s", 1000);
     check_vec("pw", "abcdefghijklmnop", 0); /* default 5000 */
     check_vec("pw", "abcdefghijklmnop", 5000);
