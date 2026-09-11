@@ -1,1 +1,6 @@
 build/
+dist/
+release_assets/
+*.tar.gz
+*.zip
+SHA256SUMS.txt
