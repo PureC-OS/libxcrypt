@@ -1,5 +1,3 @@
-/* Host-only test: our $6$ output must be byte-identical to glibc crypt().
- * Compile with -lcrypt. Rounds kept small so the suite runs fast. */
 #include <crypt.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,7 +35,6 @@ static void check_vec(const char *pw, const char *salt, unsigned rounds) {
         fails++;
         return;
     }
-    /* verify() must accept the reference string, reject wrong password. */
     if (purecrypt_verify(pw, ref) != 1) {
         printf("FAIL verify() rejected own hash %s\n", ref);
         fails++;
@@ -53,28 +50,24 @@ static void check_vec(const char *pw, const char *salt, unsigned rounds) {
 
 static void check_rejects(void) {
     char out[PURECRYPT_HASH_MAX];
-    /* bad salt charset */
     if (purecrypt_hash("pw", "bad!salt", 0, out) == 0) {
         printf("FAIL accepted bad salt charset\n");
         fails++;
     } else {
         printf("ok reject bad salt\n");
     }
-    /* salt too long */
     if (purecrypt_hash("pw", "0123456789abcdefg", 0, out) == 0) {
         printf("FAIL accepted 17-char salt\n");
         fails++;
     } else {
         printf("ok reject long salt\n");
     }
-    /* malformed setting */
     if (purecrypt_verify("pw", "$6$short") != -1) {
         printf("FAIL accepted malformed setting\n");
         fails++;
     } else {
         printf("ok reject malformed\n");
     }
-    /* tampered hash must not verify */
     {
         char good[PURECRYPT_HASH_MAX];
         purecrypt_hash("secret", "saltsaltsaltsalt", 1000, good);
@@ -86,7 +79,6 @@ static void check_rejects(void) {
             printf("ok reject tampered\n");
         }
     }
-    /* gensalt shape */
     {
         uint8_t raw[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         char s[17];

@@ -1,5 +1,3 @@
-/* Freestanding SHA-512 (FIPS 180-4). Public-domain style implementation,
- * written for PureC OS: no libc includes, no malloc, integer ops only. */
 #include "sha512.h"
 
 static const uint64_t K[80] = {
@@ -107,15 +105,11 @@ void pure_sha512_final(pure_sha512_ctx *ctx, uint8_t out[PURE_SHA512_DIGEST_LEN]
     uint8_t pad = 0x80;
     pure_sha512_update(ctx, &pad, 1);
     uint8_t zero = 0;
-    /* Pad with zeros until 112 bytes mod 128 (room for 16-byte length). */
     while (ctx->buflen != 112)
         pure_sha512_update(ctx, &zero, 1);
-    /* Append 128-bit big-endian bit length (high 64 bits are zero:
-     * total_len < 2^61 bytes always holds for realistic inputs). */
     uint8_t lenblock[16] = {0};
     for (int i = 0; i < 8; i++)
         lenblock[8 + i] = (uint8_t)(bit_len >> (56 - 8 * i));
-    /* Bypass update() counter: length itself must not be counted. */
     for (int i = 0; i < 16; i++)
         ctx->buf[ctx->buflen + i] = lenblock[i];
     transform(ctx, ctx->buf);

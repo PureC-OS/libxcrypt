@@ -1,4 +1,3 @@
-/* Host-only test: FIPS 180-4 SHA-512 vectors through the public API. */
 #include <stdio.h>
 #include <string.h>
 #include "sha512.h"
@@ -20,7 +19,6 @@ static void check(const char *name, const uint8_t *msg, size_t len,
 }
 
 static void check_streaming(void) {
-    /* Same "abc" fed byte-by-byte must match one-shot. */
     uint8_t a[64], b[64];
     pure_sha512_ctx ctx;
     pure_sha512((const uint8_t *)"abc", 3, a);
@@ -55,7 +53,6 @@ int main(void) {
     check("112-char", (const uint8_t *)m112, 112,
           "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299ae"
           "adb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-    /* 1M x 'a' in chunks (multi-block + padding edge). */
     {
         pure_sha512_ctx ctx;
         uint8_t d[64];

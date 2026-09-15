@@ -1,5 +1,3 @@
-/* SHA512-crypt ("$6$") password hashing, Ulrich Drepper spec.
- * Freestanding: own string helpers, stack buffers only, secrets wiped. */
 #include "purecrypt.h"
 #include "sha512.h"
 
@@ -30,7 +28,6 @@ static int salt_ok(const char *salt, size_t *out_len) {
     return 1;
 }
 
-/* b64 encoding of the final digest, Drepper permutation. */
 static void encode_hash(const uint8_t alt[64], char out86[86]) {
     static const uint8_t perm[21][3] = {
         {0, 21, 42}, {22, 43, 1}, {44, 2, 23}, {3, 24, 45}, {25, 46, 4},
@@ -49,13 +46,11 @@ static void encode_hash(const uint8_t alt[64], char out86[86]) {
             w >>= 6;
         }
     }
-    /* Leftover byte 63 -> 2 chars. */
     unsigned w = alt[63];
     *p++ = itoa64[w & 0x3f];
     *p++ = itoa64[(w >> 6) & 0x3f];
 }
 
-/* Core "$6$" computation shared by hash() and verify(). */
 static int crypt_body(const char *pw, size_t pw_len,
                       const char *salt, size_t salt_len,
                       unsigned long rounds,
@@ -65,15 +60,11 @@ static int crypt_body(const char *pw, size_t pw_len,
     uint8_t s_bytes[PURECRYPT_SALT_MAX];
     pure_sha512_ctx ctx;
     size_t cnt, i;
-
-    /* 1. Alternate sum: SHA512(pw + salt + pw). */
     pure_sha512_init(&ctx);
     pure_sha512_update(&ctx, (const uint8_t *)pw, pw_len);
     pure_sha512_update(&ctx, (const uint8_t *)salt, salt_len);
     pure_sha512_update(&ctx, (const uint8_t *)pw, pw_len);
     pure_sha512_final(&ctx, alt);
-
-    /* 2. Intermediate: pw + salt + pw_len bytes of alt (+ bit loop). */
     pure_sha512_init(&ctx);
     pure_sha512_update(&ctx, (const uint8_t *)pw, pw_len);
     pure_sha512_update(&ctx, (const uint8_t *)salt, salt_len);
@@ -87,17 +78,12 @@ static int crypt_body(const char *pw, size_t pw_len,
             pure_sha512_update(&ctx, (const uint8_t *)pw, pw_len);
     }
     pure_sha512_final(&ctx, dp);
-
-    /* 3. Byte sequence P: SHA512(pw repeated pw_len times), cycled. */
     pure_sha512_init(&ctx);
     for (cnt = pw_len; cnt > 0; cnt--)
         pure_sha512_update(&ctx, (const uint8_t *)pw, pw_len);
     pure_sha512_final(&ctx, tmp);
     for (i = 0; i < pw_len; i++)
         p_bytes[i] = tmp[i % 64];
-
-    /* 4. Byte sequence S: SHA512(salt repeated (16 + dp[0]) times),
-     * cycled. dp still holds the intermediate digest here. */
     pure_sha512_init(&ctx);
     for (cnt = 0; cnt < 16u + (unsigned)dp[0]; cnt++)
         pure_sha512_update(&ctx, (const uint8_t *)salt, salt_len);
@@ -105,8 +91,6 @@ static int crypt_body(const char *pw, size_t pw_len,
     for (i = 0; i < salt_len; i++)
         s_bytes[i] = tmp[i % 64];
     pure_memzero(tmp, sizeof(tmp));
-
-    /* 5. Stretching rounds. */
     for (cnt = 0; cnt < rounds; cnt++) {
         pure_sha512_init(&ctx);
         if (cnt & 1)
@@ -123,11 +107,9 @@ static int crypt_body(const char *pw, size_t pw_len,
             pure_sha512_update(&ctx, p_bytes, pw_len);
         pure_sha512_final(&ctx, dp);
     }
-
     pure_memzero(p_bytes, sizeof(p_bytes));
     pure_memzero(s_bytes, sizeof(s_bytes));
     pure_memzero(alt, sizeof(alt));
-
     encode_hash(dp, hash86);
     pure_memzero(dp, sizeof(dp));
     if (rounds_used)
@@ -135,7 +117,6 @@ static int crypt_body(const char *pw, size_t pw_len,
     return 0;
 }
 
-/* Decimal append helper; returns 0 on overflow. */
 static int append_ulong(char *dst, size_t cap, size_t *pos, unsigned long v) {
     char tmp[16];
     int n = 0;
@@ -146,7 +127,6 @@ static int append_ulong(char *dst, size_t cap, size_t *pos, unsigned long v) {
             tmp[n++] = (char)('0' + (v % 10)), v /= 10;
         if (v != 0)
             return 0;
-        /* reverse */
         for (int a = 0, b = n - 1; a < b; a++, b--) {
             char t = tmp[a];
             tmp[a] = tmp[b];
@@ -166,7 +146,6 @@ int purecrypt_hash(const char *password, const char *salt, unsigned rounds,
     unsigned long r;
     char hash86[86];
     size_t pos = 0;
-
     if (!password || !salt || !out)
         return -1;
     pw_len = pstrlen(password);
@@ -177,9 +156,7 @@ int purecrypt_hash(const char *password, const char *salt, unsigned rounds,
     r = rounds == 0 ? PURECRYPT_ROUNDS_DEFAULT : rounds;
     if (r < PURECRYPT_ROUNDS_MIN || r > PURECRYPT_ROUNDS_MAX)
         return -1;
-
     crypt_body(password, pw_len, salt, salt_len, r, hash86, NULL);
-
     out[pos++] = '$';
     out[pos++] = '6';
     out[pos++] = '$';
@@ -204,7 +181,6 @@ int purecrypt_hash(const char *password, const char *salt, unsigned rounds,
     return 0;
 }
 
-/* Parse "$6$[rounds=N$]salt$hash". Returns 0 on success. */
 static int parse_setting(const char *s, const char **salt, size_t *salt_len,
                          unsigned long *rounds, const char **hash) {
     const char *p;
@@ -213,7 +189,6 @@ static int parse_setting(const char *s, const char **salt, size_t *salt_len,
     p = s + 3;
     *rounds = PURECRYPT_ROUNDS_DEFAULT;
     if (p[0] == 'r') {
-        /* rounds=N$ */
         const char *tag = "rounds=";
         for (int k = 0; k < 7; k++)
             if (p[k] != tag[k])
@@ -241,10 +216,8 @@ static int parse_setting(const char *s, const char **salt, size_t *salt_len,
     *salt_len = (size_t)(p - *salt);
     if (*salt_len == 0 || *p != '$')
         return -1;
-    /* glibc truncates overlong salts instead of failing. */
     if (*salt_len > PURECRYPT_SALT_MAX)
         *salt_len = PURECRYPT_SALT_MAX;
-    /* validate salt charset (bounded, no strlen needed) */
     {
         size_t dummy = *salt_len;
         char tmp[PURECRYPT_SALT_MAX + 1];
@@ -259,7 +232,6 @@ static int parse_setting(const char *s, const char **salt, size_t *salt_len,
         return -1;
     return 0;
 }
-
 int purecrypt_verify(const char *password, const char *expected) {
     const char *salt, *hash;
     size_t pw_len, salt_len;
@@ -267,7 +239,6 @@ int purecrypt_verify(const char *password, const char *expected) {
     char saltbuf[PURECRYPT_SALT_MAX + 1];
     char hash86[86];
     int eq;
-
     if (!password || !expected)
         return -1;
     pw_len = pstrlen(password);
@@ -278,11 +249,8 @@ int purecrypt_verify(const char *password, const char *expected) {
     for (size_t k = 0; k < salt_len; k++)
         saltbuf[k] = salt[k];
     saltbuf[salt_len] = '\0';
-
     crypt_body(password, pw_len, saltbuf, salt_len, rounds, hash86, NULL);
     pure_memzero(saltbuf, sizeof(saltbuf));
-
-    /* Constant-time compare over the 86-char hash body. */
     eq = pure_memeq(hash86, hash, 86);
     pure_memzero(hash86, sizeof(hash86));
     return eq ? 1 : 0;
