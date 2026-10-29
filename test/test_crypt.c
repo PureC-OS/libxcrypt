@@ -93,6 +93,8 @@ static void check_rejects(void) {
 }
 
 int main(void) {
+    check_vec("pw", "rootsalt", 0);
+    check_vec("pw", "r", 1000);
     check_vec("", "abcd", 1000);
     check_vec("a", "x", 1000);
     check_vec("password", "saltsalt", 1000);

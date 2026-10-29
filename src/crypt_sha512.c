@@ -188,11 +188,8 @@ static int parse_setting(const char *s, const char **salt, size_t *salt_len,
         return -1;
     p = s + 3;
     *rounds = PURECRYPT_ROUNDS_DEFAULT;
-    if (p[0] == 'r') {
-        const char *tag = "rounds=";
-        for (int k = 0; k < 7; k++)
-            if (p[k] != tag[k])
-                return -1;
+    if (p[0] == 'r' && p[1] == 'o' && p[2] == 'u' && p[3] == 'n' &&
+        p[4] == 'd' && p[5] == 's' && p[6] == '=') {
         p += 7;
         unsigned long r = 0;
         int digits = 0;
