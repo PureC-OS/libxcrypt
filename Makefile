@@ -21,9 +21,34 @@ MOD_OBJS := $(BUILD)/sha512.k.o $(BUILD)/crypt_sha512.k.o $(BUILD)/sha1.k.o $(BU
 MOD_ELF := $(MODULE_DIR)/crypt.elf
 MOD_KO := $(MODULE_DIR)/crypt.ko
 
-.PHONY: all module test clean
+SOMAJOR ?= 1
+SOVER ?= 1.0.0
+SO_CFLAGS := -std=c11 -Wall -Wextra -Werror -O2 -ffreestanding \
+	-fno-stack-protector -fPIC -m64 -mno-red-zone -Iinclude
+SO_OBJS := $(BUILD)/pic/sha512.o $(BUILD)/pic/crypt_sha512.o $(BUILD)/pic/sha1.o $(BUILD)/pic/aes.o
+SO_REAL := $(BUILD)/libpurecrypt.so.$(SOVER)
+SO_SONAME_LINK := $(BUILD)/libpurecrypt.so.$(SOMAJOR)
+SO_DEV := $(BUILD)/libpurecrypt.so
+
+.PHONY: all module shared test clean
 
 all: $(LIB)
+
+shared: $(SO_DEV)
+
+$(SO_REAL): $(SO_OBJS)
+	@mkdir -p $(@D)
+	$(LD) -shared --hash-style=sysv -z noexecstack -soname libpurecrypt.so.$(SOMAJOR) -o $@ $^
+
+$(SO_SONAME_LINK): $(SO_REAL)
+	ln -sf $(notdir $<) $@
+
+$(SO_DEV): $(SO_SONAME_LINK)
+	ln -sf $(notdir $<) $@
+
+$(BUILD)/pic/%.o: src/%.c
+	@mkdir -p $(@D)
+	$(CC) $(SO_CFLAGS) -c $< -o $@
 
 module: $(MOD_ELF) $(MOD_KO)
 
