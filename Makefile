@@ -16,8 +16,8 @@ BUILD := build
 BIN_DIR ?= $(CURDIR)/build
 MODULE_DIR := $(BIN_DIR)/modules
 LIB := $(BUILD)/libpurecrypt.a
-OBJS := $(BUILD)/sha512.o $(BUILD)/crypt_sha512.o
-MOD_OBJS := $(BUILD)/sha512.k.o $(BUILD)/crypt_sha512.k.o
+OBJS := $(BUILD)/sha512.o $(BUILD)/crypt_sha512.o $(BUILD)/sha1.o $(BUILD)/aes.o
+MOD_OBJS := $(BUILD)/sha512.k.o $(BUILD)/crypt_sha512.k.o $(BUILD)/sha1.k.o $(BUILD)/aes.k.o
 MOD_ELF := $(MODULE_DIR)/crypt.elf
 MOD_KO := $(MODULE_DIR)/crypt.ko
 
@@ -50,9 +50,10 @@ $(MOD_KO): $(MOD_ELF)
 
 -include $(MOD_OBJS:.o=.d)
 
-test: $(BUILD)/test_sha512 $(BUILD)/test_crypt
+test: $(BUILD)/test_sha512 $(BUILD)/test_crypt $(BUILD)/test_wpa
 	./$(BUILD)/test_sha512
 	./$(BUILD)/test_crypt
+	./$(BUILD)/test_wpa
 
 $(BUILD)/test_sha512: test/test_sha512.c src/sha512.c
 	@mkdir -p $(@D)
@@ -61,6 +62,10 @@ $(BUILD)/test_sha512: test/test_sha512.c src/sha512.c
 $(BUILD)/test_crypt: test/test_crypt.c src/sha512.c src/crypt_sha512.c
 	@mkdir -p $(@D)
 	$(HOST_CC) $(HOST_CFLAGS) $^ -lcrypt -o $@
+
+$(BUILD)/test_wpa: test/test_wpa.c src/sha1.c src/aes.c src/sha512.c
+	@mkdir -p $(@D)
+	$(HOST_CC) $(HOST_CFLAGS) $^ -o $@
 
 clean:
 	rm -rf $(BUILD)
